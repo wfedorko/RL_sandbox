@@ -131,3 +131,7 @@ dmypy.json
 # movies
 mp4/
 
+# other
+ip.txt
+jupyter_logbook.txt
+

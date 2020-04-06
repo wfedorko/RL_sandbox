@@ -136,3 +136,6 @@ ip.txt
 jupyter_logbook.txt
 UdemyCode
 
+baselines
+*png
+*pth

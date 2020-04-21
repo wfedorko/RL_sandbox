@@ -103,32 +103,34 @@ class QNet_Agent():
         self.nn.eval()
         self.target_nn.eval()
             
+        with torch.no_grad():
+            if self.config.double_dqn:
+                #print('in double DQN')
+                new_state_values_from_nn=self.nn(new_state).detach()
+                #print('new_state_values_from_nn shape {} and value:'.format(new_state_values_from_nn.shape))
+                #print(new_state_values_from_nn)
+                max_new_state_indexes=torch.max(new_state_values_from_nn,dim=1)[1].view(-1,1)
+                #print('max_new_state_indexes shape {} and value:'.format(max_new_state_indexes.shape))
+                #print(max_new_state_indexes)
+                new_state_values=self.target_nn(new_state).detach()
+                #print('new_state_values shape {} and value:'.format(new_state_values.shape))
+                #print(new_state_values)
+                max_new_state_values=torch.gather(new_state_values,1,max_new_state_indexes).squeeze()
+                #print('max_new_state_values shape {} and value:'.format(max_new_state_values.shape))
+                #print(max_new_state_values)
+            else:
+                #print('in regular DQN')
+                new_state_values=self.target_nn(new_state).detach()
+                #print('new_state_values shape {} and value'.format(new_state_values.shape))
+                #print(new_state_values)
             
-        if self.config.double_dqn:
-            #print('in double DQN')
-            new_state_values_from_nn=self.nn(new_state).detach()
-            #print('new_state_values_from_nn shape {} and value:'.format(new_state_values_from_nn.shape))
-            #print(new_state_values_from_nn)
-            max_new_state_indexes=torch.max(new_state_values_from_nn,dim=1)[1].view(-1,1)
-            #print('max_new_state_indexes shape {} and value:'.format(max_new_state_indexes.shape))
-            #print(max_new_state_indexes)
-            new_state_values=self.target_nn(new_state).detach()
-            #print('new_state_values shape {} and value:'.format(new_state_values.shape))
-            #print(new_state_values)
-            max_new_state_values=torch.gather(new_state_values,1,max_new_state_indexes).squeeze()
-            #print('max_new_state_values shape {} and value:'.format(max_new_state_values.shape))
-            #print(max_new_state_values)
-        else:
-            #print('in regular DQN')
-            new_state_values=self.target_nn(new_state).detach()
-            #print('new_state_values shape {} and value'.format(new_state_values.shape))
-            #print(new_state_values)
+                max_new_state_values=torch.max(new_state_values,dim=1)[0]
+                #print('max_new_state_values shape {} and value'.format(max_new_state_values.shape))
+                #print(max_new_state_values)
+                
+            target_value=(reward + (1-done)*self.config.gamma*max_new_state_values).view(-1,1)
         
-            max_new_state_values=torch.max(new_state_values,dim=1)[0]
-            #print('max_new_state_values shape {} and value'.format(max_new_state_values.shape))
-            #print(max_new_state_values)
-            
-        target_value=(reward + (1-done)*self.config.gamma*max_new_state_values).view(-1,1)
+        #end no grad
         
         #print('shape of: target_value')
         #print(target_value.shape)

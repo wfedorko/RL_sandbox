@@ -13,7 +13,7 @@ from utils.ExperienceReplay import ExperienceReplay
 from utils.training_helpers import calculate_epsilon
 from utils.plotting_utils import plot_results
 
-from utils.processing_utils import 
+from utils.processing_utils import preprocess_frame
 
 import random
 
@@ -42,7 +42,7 @@ class Engine:
         self.memory_device=torch.device(config.memory_device if config.use_cuda else "cpu")
         
         print('devices: compute: {}; Experience Replay: {}'.format(self.device,
-                                                                   self.memory_device)
+                                                                   self.memory_device))
         
         dirName='{}/{}'.format(config.result_path,config.exp_name)
         
@@ -63,7 +63,8 @@ class Engine:
             torch.manual_seed(config.rand_seed)
             random.seed(config.rand_seed)
         
-        self.memory=ExperienceReplay(self.memory_device,
+        self.memory=ExperienceReplay(self.config,
+                                     self.memory_device,
                                      self.env.observation_space.shape,
                                      torch.float32,
                                      torch.long)

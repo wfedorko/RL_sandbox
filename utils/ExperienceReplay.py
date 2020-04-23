@@ -1,16 +1,20 @@
 import numpy as np
 import math
 import random
+import torch
 
 from utils.processing_utils import preprocess_frame
 from utils.processing_utils import transpose_tuple
 
 class ExperienceReplay():
-    def __init__(self, memory_device, state_shape, state_dtype, action_dtype):
+    def __init__(self, config, memory_device, state_shape, state_dtype, action_dtype):
         self.capacity=config.replay_memory_size
         self.memory_state_shape=[self.capacity]
         for i in transpose_tuple:
-            self.memory_state_shape+=state_shape[i]
+            self.memory_state_shape+=[state_shape[i]]
+            
+        self.memory_device=memory_device
+        
         print('creating state memory with shape: {}'.format(self.memory_state_shape))
         
         self.memory_state=torch.zeros(self.memory_state_shape,
@@ -53,7 +57,10 @@ class ExperienceReplay():
     def sample(self,batch_size):
         
         #idx=torch.multinomial(self.wgt,batch_size)
-        idx=torch.randint(0,self.filled_to,(batch_size,),dtype=torch.long,device=device)
+        idx=torch.randint(0,self.filled_to,
+                          (batch_size,),
+                          dtype=torch.long,
+                          device=self.memory_device)
         return (self.memory_state[idx],
                 self.memory_action[idx],
                 self.memory_new_state[idx],

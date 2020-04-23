@@ -1,0 +1,269 @@
+this is from test2 notebook again with list experience replay
+commit 8cfb85f
+
+
+Timer unit: 1e-06 s
+
+Total time: 27752.2 s
+File: ../agents/QNet_Agent.py
+Function: optimize at line 63
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    63                                               def optimize(self):
+    64                                                   
+    65   1950645   11677951.0      6.0      0.0          if len(self.memory)<self.config.batch_size:
+    66        31         48.0      1.5      0.0              return
+    67                                                   
+    68   1950614  467174457.0    239.5      1.7          state, action, new_state, reward, done = self.memory.sample(self.config.batch_size)
+    69                                                   
+    70   1950614 3646779186.0   1869.6     13.1          state=[preprocess_frame(frame, self.device) for frame in state] 
+    71   1950614  282537696.0    144.8      1.0          state=torch.cat(state)
+    72                                                   
+    73   1950614 3484235299.0   1786.2     12.6          new_state=[preprocess_frame(frame, self.device) for frame in new_state] 
+    74   1950614  261894910.0    134.3      0.9          new_state=torch.cat(new_state)
+    75                                                   
+    76                                                   #print('state batch shape {}'.format(state.shape))
+    77                                                   #print(state)
+    78                                                   
+    79                                                   #state=torch.Tensor(state).to(device)
+    80                                                   #new_state=torch.Tensor(new_state).to(device)
+    81                                                   
+    82                                                   
+    83   1950614  106976693.0     54.8      0.4          reward=torch.Tensor(reward).to(self.device)
+    84                                                   
+    85                                                   #the view call below is to transform into column vector
+    86                                                   #so that it can be used in the gather call
+    87                                                   #i.e. we will use it to pick out from the computed value
+    88                                                   #tensor only values indexed by selected action
+    89   1950614  109291571.0     56.0      0.4          action=(torch.Tensor(action).view(-1,1).long()).to(self.device)
+    90                                                   #print('action: ')
+    91                                                   #print(action)
+    92                                                   #print('contiguous?', action.is_contiguous())
+    93   1950614   65409619.0     33.5      0.2          done=torch.Tensor(done).to(self.device)
+    94                                                   
+    95                                                   #print('shape of: state, new state, reward, action, done:')
+    96                                                   #print(state.shape)
+    97                                                   #print(new_state.shape)
+    98                                                   #print(reward.shape)
+    99                                                   #print(action.shape)
+   100                                                   #print(done.shape)
+   101                                                   
+   102                                                   
+   103   1950614  305722795.0    156.7      1.1          self.nn.eval()
+   104   1950614  243524727.0    124.8      0.9          self.target_nn.eval()
+   105                                                       
+   106   1950614   15023372.0      7.7      0.1          with torch.no_grad():
+   107   1950614    4692113.0      2.4      0.0              if self.config.double_dqn:
+   108                                                           #print('in double DQN')
+   109   1950614 2351456728.0   1205.5      8.5                  new_state_values_from_nn=self.nn(new_state).detach()
+   110                                                           #print('new_state_values_from_nn shape {} and value:'.format(new_state_values_from_nn.shape))
+   111                                                           #print(new_state_values_from_nn)
+   112   1950614   89036929.0     45.6      0.3                  max_new_state_indexes=torch.max(new_state_values_from_nn,dim=1)[1].view(-1,1)
+   113                                                           #print('max_new_state_indexes shape {} and value:'.format(max_new_state_indexes.shape))
+   114                                                           #print(max_new_state_indexes)
+   115   1950614 2186468585.0   1120.9      7.9                  new_state_values=self.target_nn(new_state).detach()
+   116                                                           #print('new_state_values shape {} and value:'.format(new_state_values.shape))
+   117                                                           #print(new_state_values)
+   118   1950614   73571945.0     37.7      0.3                  max_new_state_values=torch.gather(new_state_values,1,max_new_state_indexes).squeeze()
+   119                                                           #print('max_new_state_values shape {} and value:'.format(max_new_state_values.shape))
+   120                                                           #print(max_new_state_values)
+   121                                                       else:
+   122                                                           #print('in regular DQN')
+   123                                                           new_state_values=self.target_nn(new_state).detach()
+   124                                                           #print('new_state_values shape {} and value'.format(new_state_values.shape))
+   125                                                           #print(new_state_values)
+   126                                                       
+   127                                                           max_new_state_values=torch.max(new_state_values,dim=1)[0]
+   128                                                           #print('max_new_state_values shape {} and value'.format(max_new_state_values.shape))
+   129                                                           #print(max_new_state_values)
+   130                                                           
+   131   1950614  218522912.0    112.0      0.8              target_value=(reward + (1-done)*self.config.gamma*max_new_state_values).view(-1,1)
+   132                                                   
+   133                                                   #end no grad
+   134                                                   
+   135                                                   #print('shape of: target_value')
+   136                                                   #print(target_value.shape)
+   137   1950614  283117252.0    145.1      1.0          self.nn.train()
+   138                                                   
+   139                                                   #this will select only the values of the desired actions
+   140   1950614 2604751500.0   1335.3      9.4          predicted_value=torch.gather(self.nn(state),1,action)
+   141                                                   #print('shape of: predicted_value')
+   142                                                   #print(predicted_value.shape)
+   143                                                   
+   144                                                   
+   145   1950614  205096765.0    105.1      0.7          loss=self.loss_function(predicted_value,target_value)
+   146   1950614  530446641.0    271.9      1.9          self.optimizer.zero_grad()
+   147   1950614 4749646134.0   2434.9     17.1          loss.backward()
+   148                                                   
+   149   1950614   10615816.0      5.4      0.0          if self.config.clip_error:
+   150  29259210  460415986.0     15.7      1.7              for param in self.nn.parameters():
+   151  27308596  557916028.0     20.4      2.0                  param.grad.clamp_(-1.0,1.0)
+   152                                                   
+   153   1950614 4400584324.0   2256.0     15.9          self.optimizer.step()
+   154                                                   
+   155   1950614    8378478.0      4.3      0.0          if self.number_of_frames % self.config.update_target_frequency == 0:
+   156                                                       #print("***********************")
+   157                                                       #print("UPDATING TARGET NETWORK")
+   158                                                       #print("update counter: {}".format(self.update_target_counter))
+   159                                                       #print("***********************")
+   160       391     408040.0   1043.6      0.0              self.target_nn.load_state_dict(self.nn.state_dict())
+   161                                                       
+   162   1950614    4370960.0      2.2      0.0          if self.number_of_frames % self.config.save_model_frequency ==0:
+   163       196    7413638.0  37824.7      0.0              self.save_model()
+   164                                                   
+   165   1950614    5014585.0      2.6      0.0          self.number_of_frames+=1
+
+Total time: 8982.21 s
+File: ../models/models.py
+Function: forward at line 83
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    83                                               def forward(self, x):
+    84                                                   
+    85                                                   #print('x shape {} and value:'.format(x.shape))
+    86                                                   #print(x.detach().cpu())
+    87                                                   
+    88   7774192   13691388.0      1.8      0.2          if self.config.normalize_image:
+    89   7774192  272509896.0     35.1      3.0              x=x/255.0
+    90                                                   
+    91   7774192 1284012480.0    165.2     14.3          output_conv = self.conv1(x)
+    92   7774192  383850330.0     49.4      4.3          output_conv = self.activation(output_conv)
+    93   7774192 1015171564.0    130.6     11.3          output_conv = self.conv2(output_conv)
+    94   7774192  340079154.0     43.7      3.8          output_conv = self.activation(output_conv)
+    95   7774192 1000520026.0    128.7     11.1          output_conv = self.conv3(output_conv)
+    96   7774192  329031166.0     42.3      3.7          output_conv = self.activation(output_conv)
+    97                                                   
+    98   7774192   83752114.0     10.8      0.9          output_conv = output_conv.view(output_conv.shape[0],-1)
+    99                                                   
+   100   7774192  934541112.0    120.2     10.4          output_advantage=self.advantage1(output_conv)
+   101   7774192  340302453.0     43.8      3.8          output_advantage=self.activation(output_advantage)
+   102   7774192  742571428.0     95.5      8.3          output_advantage=self.advantage2(output_advantage)
+   103                                                   
+   104   7774192  697060030.0     89.7      7.8          output_value=self.value1(output_conv)
+   105   7774192  326094898.0     41.9      3.6          output_value=self.activation(output_value)
+   106   7774192  624660515.0     80.4      7.0          output_value=self.value2(output_value)
+   107                                                   
+   108                                                   #print('output_advantage shape {} and value:'.format(output_advantage.shape))
+   109                                                   #print(output_advantage.detach().cpu())
+   110                                                   
+   111                                                   #print('output_value shape {} and value:'.format(output_value.shape))
+   112                                                   #print(output_value.detach().cpu())
+   113                                                   
+   114                                                   #print('output_advantage.mean shape {} and value:'.format(output_advantage.mean(dim=1,keepdim=True).shape))
+   115                                                   #print(output_advantage.mean(dim=1,keepdim=True).detach().cpu())
+   116                                                   
+   117   7774192  584738654.0     75.2      6.5          output_final = output_value + output_advantage - output_advantage.mean()
+   118                                                   
+   119                                                   #output_final=output_value+output_advantage-output_advantage.mean(dim=1,keepdim=True)
+   120                                                   
+   121                                                   
+   122   7774192    9626075.0      1.2      0.1          return output_final
+
+Total time: 19.7007 s
+File: ../utils/ExperienceReplay.py
+Function: push at line 13
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    13                                               def push(self, state,
+    14                                                        action, new_state,
+    15                                                        reward, done):
+    16                                                   
+    17   1950645    1803814.0      0.9      9.2              transition=(state,action,new_state,reward,done)
+    18                                                       
+    19   1950645    2922778.0      1.5     14.8              if self.position>=len(self.memory):
+    20    100000     144125.0      1.4      0.7                  self.memory.append(transition)
+    21                                                       else:
+    22   1850645   11873976.0      6.4     60.3                  self.memory[self.position]=transition
+    23                                                           
+    24   1950645    2956043.0      1.5     15.0              self.position=(self.position+1)%self.capacity
+
+Total time: 435.52 s
+File: ../utils/ExperienceReplay.py
+Function: sample at line 27
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    27                                               def sample(self,batch_size):
+    28   1950614  435519969.0    223.3    100.0          return zip(*random.sample(self.memory, batch_size))
+
+Total time: 35802.6 s
+File: ../utils/engine.py
+Function: train_agent at line 69
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    69                                               def train_agent(self):
+    70                                                   
+    71         1        124.0    124.0      0.0          steps_total=np.full([self.config.num_episodes],-999,dtype=np.int32)
+    72         1         16.0     16.0      0.0          reward_total=np.full([self.config.num_episodes],-999,dtype=np.int32)
+    73                                           
+    74         1          2.0      2.0      0.0          frames_total=0
+    75                                           
+    76         1          1.0      1.0      0.0          solved_after = 0
+    77         1          1.0      1.0      0.0          solved = False
+    78                                           
+    79         1          2.0      2.0      0.0          start_time = time.time()
+    80                                           
+    81      1001       3658.0      3.7      0.0          for i_episode in range(self.config.num_episodes):
+    82                                           
+    83      1000   76660600.0  76660.6      0.2              state = self.env.reset()
+    84                                                       #for step in range(100):
+    85      1000       2789.0      2.8      0.0              step=0
+    86      1000       3206.0      3.2      0.0              reward_total[i_episode]=0
+    87                                           
+    88      1000       1440.0      1.4      0.0              while True:
+    89                                           
+    90   1950645    3023114.0      1.5      0.0                  step+=1
+    91   1950645    2926301.0      1.5      0.0                  frames_total += 1
+    92                                           
+    93   1950645   17049087.0      8.7      0.0                  epsilon=calculate_epsilon(frames_total,self.config)
+    94                                           
+    95                                                           #action=env.action_space.sample()
+    96   1950645 3088832355.0   1583.5      8.6                  action=self.qnet_agent.select_action(state,epsilon)
+    97                                           
+    98   1950645 4383969153.0   2247.4     12.2                  new_state, reward, done, info = self.env.step(action)
+    99   1950645    5844920.0      3.0      0.0                  self.memory.push(state, action, new_state,
+   100   1950645   31952047.0     16.4      0.1                                   reward, done)
+   101                                           
+   102   1950645   37037687.0     19.0      0.1                  reward_total[i_episode]+=reward
+   103                                           
+   104   1950645 28120001532.0  14415.7     78.5                  self.qnet_agent.optimize()
+   105                                           
+   106   1950645    3337932.0      1.7      0.0                  state=new_state
+   107                                           
+   108                                           
+   109   1950645    2685390.0      1.4      0.0                  if done:
+   110      1000       8965.0      9.0      0.0                      steps_total[i_episode]=step
+   111                                           
+   112      1000       1604.0      1.6      0.0                      if i_episode>100:
+   113       899     105023.0    116.8      0.0                          mean_reward_100 = np.sum(reward_total[i_episode-100:i_episode])/100
+   114                                           
+   115                                           
+   116       899       3872.0      4.3      0.0                          if (mean_reward_100 > self.config.score_to_solve and solved == False):
+   117         1        520.0    520.0      0.0                              print("SOLVED! After %i episodes " % i_episode)
+   118         1          4.0      4.0      0.0                              solved_after = i_episode
+   119         1          1.0      1.0      0.0                              solved = True
+   120                                           
+   121      1000       2150.0      2.1      0.0                      if (i_episode % self.config.report_interval == 0 and i_episode>1):
+   122                                           
+   123        99   28929384.0 292216.0      0.1                          plot_results(reward_total, i_episode,self.config)
+   124                                           
+   125        99      97595.0    985.8      0.0                          print("**** Episode  {} **** ".format(i_episode))
+   126        99      10475.0    105.8      0.0                          recent_avg_reward=np.average(reward_total[i_episode-self.config.report_interval:i_episode])
+   127        99       9598.0     96.9      0.0                          print("Recent average reward: {}".format(recent_avg_reward))
+   128        99        181.0      1.8      0.0                          if i_episode>100:
+   129        89       4854.0     54.5      0.0                              print("Reward over last 100: {}".format(mean_reward_100))
+   130        99       5225.0     52.8      0.0                          full_avg_so_far=np.average(reward_total[:i_episode])
+   131        99       7500.0     75.8      0.0                          print("Average over all episodes so far: {}".format(full_avg_so_far))
+   132        99       6879.0     69.5      0.0                          print("epsilon: {}".format(epsilon))
+   133        99        377.0      3.8      0.0                          elapsed_time = time.time() - start_time
+   134        99      32953.0    332.9      0.0                          print("Elapsed time: ", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+   135                                           
+   136                                                                   #print("Episode {} finished after: {}".format(i_episode,step))
+   137      1000       1554.0      1.6      0.0                      break
+   138                                           
+   139         1          1.0      1.0      0.0          if solved:
+   140         1        439.0    439.0      0.0              print("Solved after %i episodes" % solved_after)

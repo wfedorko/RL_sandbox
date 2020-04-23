@@ -17,7 +17,8 @@ class QNet_Agent():
         self.target_nn = copy.deepcopy(self.nn) 
         
         self.loss_function = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(params=self.nn.parameters(), lr=config.learning_rate)
+        self.optimizer = torch.optim.Adam(params=self.nn.parameters(),
+                                          lr=config.learning_rate)
         
         self.memory=memory
         
@@ -37,14 +38,14 @@ class QNet_Agent():
         if random_for_egreedy>epsilon:
             self.nn.eval()
             with torch.no_grad():
-                state=preprocess_frame(state,self.device)
-                #state=torch.Tensor(state).to(device)
+                state=state.to(self.device)
                 predicted_value_from_nn=self.nn(state).squeeze()
                 #print('predicted value from nn:')
                 #print(predicted_value_from_nn)
                 action=torch.argmax(predicted_value_from_nn).item()
                 #print('action: {}'.format(action))
         else:
+            # -1 is deliberate - randint gives numbers within bounds INCLUSIVE
             action=random.randint(0,self.config.number_of_outputs-1)
                 
                 
@@ -67,11 +68,17 @@ class QNet_Agent():
         
         state, action, new_state, reward, done = self.memory.sample(self.config.batch_size)
         
-        state=[preprocess_frame(frame, self.device) for frame in state] 
-        state=torch.cat(state)
+        state=state.to(self.device)
+        new_state=new_state.to(self.device)
+        action=action.to(self.device)
+        reward=reward.to(self.device)
+        done=done.to(self.device)
         
-        new_state=[preprocess_frame(frame, self.device) for frame in new_state] 
-        new_state=torch.cat(new_state)
+        #state=[preprocess_frame(frame, self.device) for frame in state] 
+        #state=torch.cat(state)
+        
+        #new_state=[preprocess_frame(frame, self.device) for frame in new_state] 
+        #new_state=torch.cat(new_state)
         
         #print('state batch shape {}'.format(state.shape))
         #print(state)

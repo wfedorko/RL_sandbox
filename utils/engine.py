@@ -13,6 +13,8 @@ from utils.ExperienceReplay import ExperienceReplay
 from utils.training_helpers import calculate_epsilon
 from utils.plotting_utils import plot_results
 
+from utils.processing_utils import 
+
 import random
 
 
@@ -37,6 +39,10 @@ class Engine:
         
         self.use_cuda = torch.cuda.is_available() and config.use_cuda
         self.device=torch.device(config.device if config.use_cuda else "cpu")
+        self.memory_device=torch.device(config.memory_device if config.use_cuda else "cpu")
+        
+        print('devices: compute: {}; Experience Replay: {}'.format(self.device,
+                                                                   self.memory_device)
         
         dirName='{}/{}'.format(config.result_path,config.exp_name)
         
@@ -57,7 +63,10 @@ class Engine:
             torch.manual_seed(config.rand_seed)
             random.seed(config.rand_seed)
         
-        self.memory=ExperienceReplay(config.replay_memory_size)
+        self.memory=ExperienceReplay(self.memory_device,
+                                     self.env.observation_space.shape,
+                                     torch.float32,
+                                     torch.long)
         
         self.qnet_agent=QNet_Agent(config, self.model, self.memory, self.device)
         
@@ -81,6 +90,7 @@ class Engine:
         for i_episode in range(self.config.num_episodes):
 
             state = self.env.reset()
+            state=preprocess_frame(state)
             #for step in range(100):
             step=0
             reward_total[i_episode]=0
@@ -96,6 +106,7 @@ class Engine:
                 action=self.qnet_agent.select_action(state,epsilon)
 
                 new_state, reward, done, info = self.env.step(action)
+                new_state=preprocess_frame(new_state)
                 self.memory.push(state, action, new_state,
                                  reward, done)
 

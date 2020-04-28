@@ -1,5 +1,5 @@
 test_tensor_ExpRep-cpu 
-commit 8ec1a4a 
+commit 3de6042..c08b65d 
 
 Timer unit: 1e-06 s
 

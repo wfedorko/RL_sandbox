@@ -36,17 +36,23 @@ class QNet_Agent():
         random_for_egreedy=torch.rand(1).item()
         
         if random_for_egreedy>epsilon:
+            #print('nn selection')
             self.nn.eval()
             with torch.no_grad():
+                #print('push state to device: {}'.format(self.device))
                 state=state.to(self.device)
+                #print('state: {}'.format(state))
+                #print('state shape: {}'.format(state.shape))
                 predicted_value_from_nn=self.nn(state).squeeze()
                 #print('predicted value from nn:')
                 #print(predicted_value_from_nn)
                 action=torch.argmax(predicted_value_from_nn).item()
                 #print('action: {}'.format(action))
         else:
+            #print('random selection')
             # -1 is deliberate - randint gives numbers within bounds INCLUSIVE
             action=random.randint(0,self.config.number_of_outputs-1)
+            #print('action: {}'.format(action))
                 
                 
         return action
@@ -70,7 +76,7 @@ class QNet_Agent():
         
         state=state.to(self.device)
         new_state=new_state.to(self.device)
-        action=action.to(self.device)
+        action=action.to(self.device, dtype=torch.long)
         reward=reward.to(self.device)
         done=done.to(self.device)
         
@@ -87,17 +93,17 @@ class QNet_Agent():
         #new_state=torch.Tensor(new_state).to(device)
         
         
-        reward=torch.Tensor(reward).to(self.device)
+        #reward=torch.Tensor(reward).to(self.device)
         
         #the view call below is to transform into column vector
         #so that it can be used in the gather call
         #i.e. we will use it to pick out from the computed value
         #tensor only values indexed by selected action
-        action=(torch.Tensor(action).view(-1,1).long()).to(self.device)
+        #action=(torch.Tensor(action).view(-1,1).long()).to(self.device)
         #print('action: ')
         #print(action)
         #print('contiguous?', action.is_contiguous())
-        done=torch.Tensor(done).to(self.device)
+        #done=torch.Tensor(done).to(self.device)
         
         #print('shape of: state, new state, reward, action, done:')
         #print(state.shape)

@@ -65,6 +65,7 @@ class SimpleCNNDuelingAllMean(nn.Module):
     def __init__(self, config):
         super(SimpleCNNDuelingAllMean, self).__init__()
         
+        
         self.config=config
         
         self.conv1=nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8 ,stride=4)
@@ -82,11 +83,13 @@ class SimpleCNNDuelingAllMean(nn.Module):
         
     def forward(self, x):
         
-        #print('x shape {} and value:'.format(x.shape))
-        #print(x.detach().cpu())
+        #print('in model forward')
         
+        #print('x shape {} and value:'.format(x.shape))
+        #print(x)
         if self.config.normalize_image:
             x=x/255.0
+        
         
         output_conv = self.conv1(x)
         output_conv = self.activation(output_conv)
@@ -95,15 +98,24 @@ class SimpleCNNDuelingAllMean(nn.Module):
         output_conv = self.conv3(output_conv)
         output_conv = self.activation(output_conv)
         
+        #print('conv part done; reshape')
         output_conv = output_conv.view(output_conv.shape[0],-1)
+        #print('output_conv shape: {}'.format(output_conv.shape))
         
+        #print('reshape done; advantage value')
         output_advantage=self.advantage1(output_conv)
+        #print('a1 done')
         output_advantage=self.activation(output_advantage)
+        #print('a1relu done')
         output_advantage=self.advantage2(output_advantage)
+        #print('a2 done')
         
         output_value=self.value1(output_conv)
+        #print('v1 done')
         output_value=self.activation(output_value)
+        #print('v1relu done')
         output_value=self.value2(output_value)
+        #print('v2 done')
         
         #print('output_advantage shape {} and value:'.format(output_advantage.shape))
         #print(output_advantage.detach().cpu())
@@ -114,9 +126,10 @@ class SimpleCNNDuelingAllMean(nn.Module):
         #print('output_advantage.mean shape {} and value:'.format(output_advantage.mean(dim=1,keepdim=True).shape))
         #print(output_advantage.mean(dim=1,keepdim=True).detach().cpu())
         
+        #print('advantage value done; computing final output')
         output_final = output_value + output_advantage - output_advantage.mean()
         
         #output_final=output_value+output_advantage-output_advantage.mean(dim=1,keepdim=True)
         
-        
+        #print('returning')
         return output_final

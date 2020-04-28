@@ -43,8 +43,17 @@ class ExperienceReplay():
              action, new_state,
              reward, done):
         
-            self.memory_state[self.position,:]=state
-            self.memory_new_state[self.position,:]=new_state
+            #print('pushing')
+            #print(self.memory_state.is_contiguous())
+            #print(self.memory_new_state.is_contiguous())
+            #print(self.memory_state.shape)
+            #print(self.memory_new_state.shape)
+            #print(self.memory_state)
+            #print(self.memory_state[self.position,:])
+            
+            
+            self.memory_state[self.position,:]=state[0,:]
+            self.memory_new_state[self.position,:]=new_state[0,:]
             self.memory_action[self.position,0]=action
             self.memory_reward[self.position]=reward
             self.memory_done[self.position]=done

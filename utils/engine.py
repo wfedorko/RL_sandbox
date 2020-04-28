@@ -78,6 +78,9 @@ class Engine:
         
     def train_agent(self):
         
+        print('training the agent')
+        
+        
         steps_total=np.full([self.config.num_episodes],-999,dtype=np.int32)
         reward_total=np.full([self.config.num_episodes],-999,dtype=np.int32)
 
@@ -89,7 +92,8 @@ class Engine:
         start_time = time.time()
 
         for i_episode in range(self.config.num_episodes):
-
+            
+            #print('reset environment')
             state = self.env.reset()
             state=preprocess_frame(state)
             #for step in range(100):
@@ -104,17 +108,23 @@ class Engine:
                 epsilon=calculate_epsilon(frames_total,self.config)
 
                 #action=env.action_space.sample()
+                #print('select action')
                 action=self.qnet_agent.select_action(state,epsilon)
-
+                
+                #print('step env')
                 new_state, reward, done, info = self.env.step(action)
                 new_state=preprocess_frame(new_state)
+                
+                #print('push mem')
                 self.memory.push(state, action, new_state,
                                  reward, done)
 
                 reward_total[i_episode]+=reward
 
+                #print('agent optimize')
                 self.qnet_agent.optimize()
 
+                #print('assign state')
                 state=new_state
 
 
